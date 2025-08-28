@@ -24,7 +24,7 @@ public:
     ShaderProgram shader;
     std::vector<vertex> vertices{};
     glm::vec3 velocity;
-    glm::vec3 gravity = glm::vec3(0.0f, -5.0f, 0.0f);
+    glm::vec3 gravity = glm::vec3(0.0f, -9.81f, 0.0f);
     bool transparent{ false };// For handling transparent models
     //transparency = final fragment alpha < 1.0; this can happen usually because -> model has transparent material -> model has transparent texture
     // (when updating material or texture, check alpha and set to TRUE when needed)
@@ -38,7 +38,7 @@ public:
         normal_matrix(glm::identity<glm::mat3>()),
         texture_id(0),
         velocity(0.0f),
-        gravity(0.0f, -5.0f, 0.0f)
+        gravity(0.0f, -9.81f, 0.0f)
     {
     }
 
@@ -109,11 +109,13 @@ public:
     void flyghtpath(float delta_t,glm::vec3 input) {
         velocity += gravity * delta_t;
         //origin += velocity * delta_t;
-        if (input.x == 0.0f) {
+        /*if (input.x == 0.0f) {
             origin.x += velocity.x * delta_t;
         }else{
             origin.x += input.x;
-        }   
+        }*/
+        //origin.x += input.x;
+        origin.x += input.x + velocity.x * delta_t;
         origin.y += velocity.y * delta_t;
         origin.z += velocity.z * delta_t;
 

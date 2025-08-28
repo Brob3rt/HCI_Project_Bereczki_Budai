@@ -634,6 +634,10 @@ int App::run(void)
     }
 
     float eyeHeight = 1.8f;
+    // Start background worker
+    if (!tracker.startWorker()) return -1;
+
+    std::uint64_t last_seq = 0;
 
     while (!glfwWindowShouldClose(window)) {    //Main loop of the application
         
@@ -710,6 +714,21 @@ int App::run(void)
         glFrontFace(GL_CW);
         Ground.draw(translate, rotate, scale);
         glFrontFace(GL_CCW);
+        if (auto res = tracker.getLatest(last_seq)) {
+            if (res->face_found) {
+                std::cout << "Face at px: " << res->center_px
+                    << " norm: " << res->center_norm << '\n';
+                float ndcX = -(res->center_norm.x * 2.0f - 1.0f);
+                float ndcY = 1.0f - res->center_norm.y * 2.0f;
+                glm::vec3 targetPos(ndcX, ndcY, 0.0f); // new position from face tracker
+                float alpha = 0.1f; // smoothing factor: smaller = smoother, slower
+                FaceTracResult = alpha * targetPos + (1.0f - alpha) * FaceTracResult;
+            }
+        }
+        else {
+            std::cout << "No face detected\n";
+            //FaceTracResult = glm::vec3(0.0f, 0.0f, 0.0f);
+        }
                 
         transparent.clear();
         // FIRST PART - draw all non-transparent in any order
@@ -740,32 +759,16 @@ int App::run(void)
                 }
                 else if (name == "throwable_rock") {
                     if (leftclick) {
-                        auto res = tracker.grabAndDetect();
-                        if (!res) break; // no more frames
-
-                        if (res->faceFound) {
-                            std::cout << "Face @ px " << res->centroidAbsolute
-                                << " norm " << res->centroidNormalized << '\n';
-                            float nx = res->centroidNormalized.x;
-                            float ny = res->centroidNormalized.y;
-                            float ndcX = -(nx * 2.0f - 1.0f);
-                            float ndcY = 1.0f - ny * 2.0f;
-                            FaceTracResult = glm::vec3(ndcX, ndcY, 0.0f);
+                            model.flyghtpath(delta_t, FaceTracResult);
+                            model.draw(translate, rotate, scale);
+                            if (model.origin.y < getTerrainHeight(model.origin.x, model.origin.z, Ground.heightmap)) {
+                                leftclick = false;
+                                continue;
+                            }
                         }
                         else {
-                            std::cout << "No face detected\n";
-                            FaceTracResult = glm::vec3(0.0f, 0.0f, 0.0f);
-                        }
-                        model.flyghtpath(delta_t, FaceTracResult);
-                        model.draw(translate, rotate, scale);
-                        if (model.origin.y < getTerrainHeight(model.origin.x, model.origin.z, Ground.heightmap)){
-                            leftclick = false;
                             continue;
                         }
-                    }
-                    else {
-                        continue;
-                    }
                     
                 }
                 else{
@@ -812,6 +815,8 @@ int App::run(void)
         glfwSwapBuffers(window);        
         glfwPollEvents();
     }
+
+    tracker.stopWorker();
     // Close OpenGL window if opened and terminate GLFW
     if (window)
         glfwDestroyWindow(window);
