@@ -487,11 +487,11 @@ void App::cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 
 void App::mouse_button_callback(GLFWwindow* window, int button, int action, int mods) { //General functionality to check if the callback is working or not
     auto app = static_cast<App*>(glfwGetWindowUserPointer(window));
-
+    /*
     if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
         app->r = 0.0f;
         app->b = 1.0f;
-    }
+    }*/
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         if(app->leftclick == false){
             app->leftclick = true;
@@ -636,7 +636,6 @@ int App::run(void)
     float eyeHeight = 1.8f;
     // Start background worker
     if (!tracker.startWorker()) return -1;
-
     std::uint64_t last_seq = 0;
 
     while (!glfwWindowShouldClose(window)) {    //Main loop of the application
